@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Carte Réseau Baie de Somme — Routage sur segments</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="main.css" />
+</head>
+
+<body>
+    <div id="app">
+        <header id="topbar">
+            <h1 class="app-title">Carte Réseau Baie de Somme</h1>
+            <button id="VHisto-btn" hidden title="Afficher le profil" aria-label="Afficher le profil">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <!-- Tête -->
+                    <circle cx="12" cy="8" r="4" />
+                    <!-- Épaules / buste -->
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                </svg>
+            </button>
+            <button id="histo-list-btn" hidden title="Afficher l'historique" aria-label="Afficher l'historique">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="M12 7v5l3 2"></path>
+                </svg>
+            </button>
+            <button id="login-btn">Connexion</button>
+        </header>
+        <div id="map"></div>
+        <div id="route-panel">
+            <div id="route-info">
+                <span class="placeholder">Sélectionnez deux points sur la carte pour voir l'itinéraire.</span>
+            </div>
+            <div class="route-actions">
+                <button id="reset-btn" hidden title="Supprimer l'itinéraire" aria-label="Supprimer l'itinéraire">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 6h18"></path>
+                        <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path>
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                        <path d="M10 11v6"></path>
+                        <path d="M14 11v6"></path>
+                    </svg>
+                </button>
+                <button id="histo-btn" hidden title="Ajouter à l'historique" aria-label="Ajouter à l'historique">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    </svg>
+                </button>
+                <span id="histo-msg" class="histo-msg" aria-live="polite"></span>
+                <button id="tele-btn" hidden title="Télécharger en format PDF" aria-label="Télécharger en format PDF">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3v12"></path>
+                        <path d="m7 10 5 5 5-5"></path>
+                        <path d="M5 21h14"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <!-- Contenu de la légende, déplacé dans la carte via JS -->
+        <template id="legend-template">
+            <div class="legend-content">
+                <div><span class="dot t-noeud"></span>Point nœud (panneaux numérotés)</div>
+                <div><span class="dot t-depart"></span>Point de départ</div>
+                <div><span class="dot t-selected"></span>Sélectionné</div>
+                <div class="legend-spacer"><span class="swatch" data-color="networkPaved"></span>Réseau (revêtu)</div>
+                <div><span class="swatch swatch-dashed" data-color="networkUnpaved"></span>Réseau (non revêtu)</div>
+                <div><span class="swatch" data-color="routePaved"></span>Itinéraire (revêtu)</div>
+                <div><span class="swatch swatch-dashed" data-color="routeUnpaved"></span>Itinéraire (non revêtu)</div>
+            </div>
+        </template>
+        <template id="recherche-template">
+            <div class="recherche-content">
+                <label for="adresse">Adresse</label>
+                <input type="text" id="adresse">
+                <label for="code-postal">Code Postal</label>
+                <input type="text" id="code-postal" inputmode="numeric" maxlength="5">
+                <label for="ville">Ville</label>
+                <input type="text" id="ville">
+            </div>
+        </template>
+        <template id="suggestion-template">
+            <div class="suggestion-content">
+                <label for="nbKm">Choisissez le nombre de kilomètres</label>
+                <select name="nbKm" id="nbKm">
+                    <option value="10 Km">10 Km</option>
+                    <option value="20 Km">20 Km</option>
+                    <option value="30 Km">30 Km</option>
+                    <option value="50 et + Km">50 et + Km</option>
+                </select>
+                <label for="non-revetu">Chemins non-revêtus sur l'itinéraire ?</label>
+                <select name="chemin" id="chemin">
+                    <option value="oui">Oui</option>
+                    <option value="non">Non</option>
+                </select>
+            </div>
+        </template>
+        <template id="connexion-template">
+            <div class="connexion-content">
+                <label for="e-mail">Adresse mail</label>
+                <input type="text" id="e-mail">
+                <label for="mot-de-passe">Mot de passe</label>
+                <input type="password" id="mot-de-passe">
+            </div>
+        </template>
+        <template id="inscription-template">
+            <div class="inscription-content">
+                <label for="nom">Nom</label>
+                <input type="text" id="nom">
+                <label for="mail">Adresse mail</label>
+                <input type="text" id="mail">
+                <label for="mdp">Mot De Passe</label>
+                <input type="password" id="mdp">
+            </div>
+        </template>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="main.js"></script>
+    <script src="suggestions-parcours.js"></script>
+</body>
+
+</html>

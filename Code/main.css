@@ -1,0 +1,767 @@
+/* ====== Base ====== */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+/* ====== Layout global ====== */
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f5f5f5;
+    -webkit-text-size-adjust: 100%;
+    /* évite le redimensionnement auto du texte sur iOS */
+}
+
+#app {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    /* tient compte des barres mobiles (Safari/Chrome mobile) */
+    width: 100vw;
+}
+
+/* ====== En-tête (titre + bouton de connexion) ====== */
+#topbar {
+    flex: 0 0 auto;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 20px;
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    z-index: 600;
+    /* au-dessus de la carte */
+}
+
+#topbar .app-title {
+    margin: 0;
+    margin-right: auto;
+    /* pousse les deux boutons côte à côte à droite */
+    font-size: clamp(14px, 3.5vw, 18px);
+    font-weight: 600;
+    color: #222;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+#login-btn {
+    flex: 0 0 auto;
+    /* ne se comprime jamais */
+    padding: 8px 16px;
+    border: 1px solid #00a31c;
+    border-radius: 6px;
+    background: #00a31c;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease;
+    height: 38px;
+}
+
+#login-btn:hover {
+    background: #007c15;
+}
+
+#histo-list-btn {
+    flex: 0 0 auto;
+    padding: 8px 16px;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    color: #000;
+    cursor: pointer;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease;
+}
+#histo-list-btn:hover { background: #f0f0f0; }
+#histo-list-btn[hidden] { display: none; }   /* sinon inline-flex écraserait "hidden" */
+
+/* Bouton "Voir l'historique" : même forme que la connexion mais en blanc/noir.
+   Caché par défaut (attribut hidden), affiché seulement quand on est connecté. */
+#VHisto-btn {
+    flex: 0 0 auto;
+    padding: 8px 16px;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    color: #000;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease;
+    height: 38px;
+}
+
+#VHisto-btn:hover {
+    background: #f0f0f0;
+}
+
+/* Mise en forme de la liste affichée dans la pop-up d'historique */
+.histo-empty {
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    margin: 12px 0;
+}
+
+.histo-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.histo-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.histo-item:last-child {
+    border-bottom: none;
+}
+
+.histo-item-title {
+    font-weight: 600;
+    color: #222;
+    word-break: break-word;
+}
+
+.histo-item-details {
+    margin-top: 4px;
+    color: #444;
+    font-size: 13px;
+}
+
+.histo-item-date {
+    margin-top: 2px;
+    color: #999;
+    font-size: 12px;
+}
+
+.histo-msg {
+    align-self: center;
+    font-size: 13px;
+    color: #1a7f37;        /* vert = succès */
+    white-space: nowrap;
+}
+.histo-msg.histo-msg-erreur {
+    color: #c0392b;        /* rouge = erreur */
+}
+/* La carte occupe tout l'espace restant sous l'en-tête */
+#map {
+    position: relative;
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    /* évite que la carte déborde dans le flex container */
+}
+
+/* ====== Panneau itinéraire (en bas, flottant au-dessus de la carte) ====== */
+#route-panel {
+    position: absolute;
+    right: 16px;
+    /* ancré en bas à droite sur desktop (plus de left: 84% qui débordait) */
+    left: auto;
+    transform: none;
+    bottom: 20px;
+    z-index: 500;
+    /* au-dessus des tuiles, sous les popups Leaflet (700) */
+    width: min(420px, calc(100% - 32px));
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #222;
+    max-height: 40vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    display: none;
+    /* caché par défaut : apparaît seulement avec 2 points sélectionnés */
+}
+
+#route-panel.visible {
+    display: block;
+    /* affiché quand deux points sont sélectionnés */
+}
+
+#route-info .placeholder {
+    color: #888;
+    font-style: italic;
+}
+
+#route-info .path {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: rgb(0, 0, 0);
+    word-break: break-word;
+    /* break-all coupait au milieu des mots : break-word est plus lisible */
+}
+
+#route-info .stats {
+    margin-top: 6px;
+    color: #444;
+}
+
+#route-info .stats-debug {
+    color: #999;
+    font-size: 12px;
+}
+
+/* Zone d'actions sous l'itinéraire : les trois icônes alignées,
+   poussées à droite du panneau. flex-wrap permet le passage à la ligne. */
+.route-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+/* Boutons d'action (suppression / historique / téléchargement) :
+   icônes seules, carrées. Les trois partagent EXACTEMENT le même style,
+   basé sur l'ancien bouton de téléchargement. */
+#reset-btn,
+#histo-btn,
+#tele-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+/* Suppression + historique restent à gauche ; margin-left:auto sur le
+   bouton de téléchargement le pousse seul à l'extrémité droite. */
+#tele-btn {
+    margin-left: auto;
+}
+
+#reset-btn:hover,
+#histo-btn:hover,
+#tele-btn:hover {
+    background: #f0f0f0;
+    color: #000;
+}
+
+/* display:inline-flex écraserait l'attribut hidden : on le rétablit explicitement. */
+#reset-btn[hidden],
+#histo-btn[hidden],
+#tele-btn[hidden] {
+    display: none;
+}
+
+/* ===== Modale de téléchargement ===== */
+
+/* Titre en vert (comme la capture) */
+#telechargement-modal .modal-title {
+    color: #000000;
+    text-align: center;
+}
+
+/* Les deux boutons : rangées d'une même "carte" */
+#telechargement-modal .modal-pdfBtn,
+#telechargement-modal .modal-kmlBtn {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    padding: 16px 20px;
+    margin: 0;
+    background: #fff;
+    border: 1px solid #ececec;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #2b2b2b;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+#telechargement-modal .modal-pdfBtn {
+    margin-top: 12px;
+    border-radius: 12px 12px 0 0;
+    border-bottom: none;
+    /* la ligne de séparation vient du bouton du bas */
+}
+
+#telechargement-modal .modal-kmlBtn {
+    border-radius: 0 0 12px 12px;
+}
+
+#telechargement-modal .modal-pdfBtn:hover,
+#telechargement-modal .modal-kmlBtn:hover {
+    background: #f6f6f6;
+}
+
+/* Badge "fichier" coloré à gauche (forme de document à coin replié) */
+#telechargement-modal .modal-pdfBtn::before,
+#telechargement-modal .modal-kmlBtn::before {
+    flex: 0 0 auto;
+    width: 42px;
+    height: 50px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 6px;
+    border-radius: 5px;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    clip-path: polygon(0 0, 72% 0, 100% 22%, 100% 100%, 0 100%);
+}
+
+#telechargement-modal .modal-pdfBtn::before {
+    content: "pdf";
+    background: #d6453f;
+    /* rouge PDF */
+}
+
+#telechargement-modal .modal-kmlBtn::before {
+    content: "kml";
+    background: #2f55c4;
+    /* bleu KML, comme la capture */
+}
+
+/* ====== Contrôle Légende (bouton dans la carte) ====== */
+/* Bouton qui se place sous les contrôles +/- de zoom (en haut-gauche). */
+.leaflet-control-legend a {
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 16px;
+    color: #000000;
+    background: #ffffff;
+    text-decoration: none;
+    display: block;
+}
+
+.leaflet-control-legend a:hover {
+    background: #f4f4f4;
+}
+
+.leaflet-control-legend.is-open a {
+    background: #ffffff;
+    color: #000000;
+}
+
+/* Le panneau qui se déplie quand on clique sur le bouton */
+.legend-content {
+    background: #fff;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #444;
+    min-width: 200px;
+    margin-top: 6px;
+}
+
+.legend-content>div {
+    margin-top: 6px;
+}
+
+.legend-content>div:first-child {
+    margin-top: 0;
+}
+
+.legend-content .legend-spacer {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+}
+
+.legend-content .legend-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #333;
+    cursor: pointer;
+}
+
+.legend-content .legend-stats {
+    font-size: 12px;
+    color: #888;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+}
+
+/* Pastilles et bandeaux dans la légende */
+.legend-content .dot,
+.legend-content .swatch {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+.legend-content .dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px dashed #000000;
+    box-sizing: border-box;
+}
+
+.legend-content .dot.t-noeud {
+    border-color: #ef6c00;
+}
+
+.legend-content .dot.t-croisement {
+    border-color: #000000;
+}
+
+.legend-content .dot.t-depart {
+    border-color: #00a31c;
+}
+
+.legend-content .dot.t-selected {
+    background: #2196f3;
+    border-color: #0d47a1;
+    border-style: solid;
+}
+
+.legend-content .swatch {
+    width: 24px;
+    height: 4px;
+    border-radius: 2px;
+}
+
+.legend-content .swatch-dashed {
+    height: 3px;
+    border-radius: 0;
+}
+
+/* Les couleurs des swatchs sont injectées en JS depuis COLORS (cf. app.js)
+   pour que la légende reste synchronisée avec ce qui s'affiche sur la carte.
+   Le swatch "non revêtu" garde un motif pointillé géré par background-image. */
+.legend-content .swatch-route {
+    height: 5px;
+}
+
+/* ====== Marqueurs sur la carte ====== */
+/* Style inspiré du balisage des cartes de randonnée : cercle blanc,
+   bordure pointillée colorée, numéro centré assorti à la bordure. */
+.pn-marker {
+    background: transparent;
+    border: none;
+}
+
+.pn-marker>div {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px dashed #2e7d32;
+    color: #2e7d32;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    transition: transform 0.1s ease;
+    white-space: nowrap;
+}
+
+.pn-marker>div:hover {
+    transform: scale(1.15);
+    z-index: 1000;
+}
+
+/* Variantes selon TYPECOURT (0=croisement, 1=noeud, 2=depart). */
+.pn-marker.t-1>div {
+    border-color: #ef6c00;
+    color: #ef6c00;
+}
+
+.pn-marker.t-2>div {
+    border-color: #00a31c;
+    color: #00a31c;
+}
+
+.pn-marker.selected>div {
+    background: #2196f3;
+    border-color: #0d47a1;
+    border-style: solid;
+    color: #fff;
+    transform: scale(1.2);
+    box-shadow: 0 2px 6px rgba(33, 150, 243, 0.5);
+}
+
+/* ====== Modale (pop-up) ====== */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    /* au-dessus de tout Leaflet */
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    /* la boîte ne touche jamais les bords de l'écran */
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.modal-overlay.open {
+    display: flex;
+}
+
+.modal-box {
+    position: relative;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+    padding: 20px 24px;
+    width: min(360px, 100%);
+    max-height: calc(100dvh - 32px);
+    /* scroll interne si le formulaire est trop haut */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    font-size: 14px;
+    color: #222;
+}
+
+.modal-title {
+    margin: 0 0 16px;
+    font-size: 17px;
+    font-weight: 600;
+    padding-right: 28px;
+    /* laisse la place au bouton de fermeture */
+}
+
+.modal-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    border: none;
+    background: transparent;
+    font-size: 24px;
+    line-height: 1;
+    color: #888;
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    color: #222;
+}
+
+.modal-confirm-btn {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    padding: 10px 14px;
+    border: 1px solid #000000;
+    border-radius: 6px;
+    background: #ffffff;
+    /* le bouton n'avait aucun fond défini : il était invisible */
+    color: #000000;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.modal-confirm-btn:hover {
+    background: #969696;
+}
+
+.modal-confirm-btn:active {
+    background: #969696;
+}
+
+.modal-confirm-btn:focus-visible {
+    outline: 2px solid #0d47a1;
+    outline-offset: 2px;
+}
+
+/* Mise en forme du contenu (labels / champs) */
+.modal-box label {
+    display: block;
+    margin: 12px 0 4px;
+    font-weight: 500;
+}
+
+.modal-box input,
+.modal-box select {
+    display: block;
+    width: 100%;
+    /* les champs prennent toute la largeur de la modale */
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    /* >=16px : empêche le zoom automatique au focus sur iOS */
+    font-family: inherit;
+    background: #fff;
+}
+
+.modal-box input:focus,
+.modal-box select:focus {
+    outline: none;
+    border-color: #000000;
+    box-shadow: 0 0 0 2px rgba(119, 119, 119, 0.2);
+}
+
+.modal-message {
+    margin: 0 0 8px;
+    font-size: 14px;
+    color: #1a7f37;
+    /* vert = succès */
+    text-align: center;
+    min-height: 18px;
+    /* évite que la boîte “saute” quand le texte apparaît */
+}
+
+.profil-ligne { margin: 6px 0; }
+.profil-label { font-weight: bold; }
+
+/* ====== Contrôles Leaflet personnalisés ====== */
+.leaflet-control-recherche a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    color: #000000;
+}
+
+.leaflet-control-recherche a:hover {
+    color: #000000;
+}
+
+.leaflet-control-lock a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    color: #000000;
+}
+
+.leaflet-control-lock a:hover {
+    color: #000000;
+}
+
+.leaflet-control-suggestion a {
+    color: #000000;
+    font-size: large;
+}
+
+.leaflet-control-legende a {
+    font-size: large;
+}
+
+.leaflet-control-zoom.zoom-disabled a {
+    pointer-events: none;
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* ====== RESPONSIVE : tablettes ====== */
+@media (max-width: 768px) {
+    #route-panel {
+        right: 12px;
+        left: 12px;
+        width: auto;
+        /* le panneau s'étire sur toute la largeur disponible */
+        bottom: 12px;
+    }
+}
+
+/* ====== RESPONSIVE : mobiles ====== */
+@media (max-width: 480px) {
+    #topbar {
+        height: 52px;
+        padding: 0 12px;
+    }
+
+    #login-btn {
+        padding: 7px 12px;
+        font-size: 13px;
+    }
+
+    #route-panel {
+        right: 8px;
+        left: 8px;
+        bottom: 8px;
+        padding: 12px;
+        max-height: 50vh;
+        font-size: 13px;
+    }
+
+    /* Les trois icônes restent compactes ; téléchargement à droite, les deux autres à gauche. */
+    #reset-btn,
+    #histo-btn,
+    #tele-btn {
+        flex: 0 0 auto;
+    }
+
+    #tele-btn {
+        margin-left: auto;
+    }
+
+    .modal-box {
+        padding: 18px 18px;
+    }
+
+    .modal-title {
+        font-size: 16px;
+    }
+
+    /* Cibles tactiles un peu plus grandes pour les contrôles de la carte */
+    .leaflet-bar a {
+        width: 34px;
+        height: 34px;
+        line-height: 34px;
+    }
+}
+
+/* ====== RESPONSIVE : écrans très bas (paysage mobile) ====== */
+@media (max-height: 450px) {
+    #route-panel {
+        max-height: 60vh;
+    }
+
+    .modal-box {
+        max-height: calc(100dvh - 16px);
+    }
+}
